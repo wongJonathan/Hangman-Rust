@@ -59,7 +59,7 @@ pub struct Game<'a> {
     pub win: bool,
     pub guesses: Vec<char>,
     pub guess_count: i32,
-    pub wrong_count: usize,
+    pub wrong_count: i32,
     pub correct_guesses: Vec<char>,
 }
 
@@ -111,7 +111,7 @@ impl Game<'_> {
     }
 
     pub fn display(&self) {
-        println!("{}", HANGMANPICS[self.wrong_count]);
+        println!("{}", HANGMANPICS[self.wrong_count as usize]);
         for c in &self.correct_guesses {
             match c {
                 '_' => print!("__ "),
@@ -129,7 +129,7 @@ impl Game<'_> {
 
     pub fn check_win(&mut self) -> bool {
         match &self.correct_guesses.iter().find(|c| **c == '_') {
-            Some(_) => self.wrong_count >= HANGMANPICS.len() - 1,
+            Some(_) => self.wrong_count >= (HANGMANPICS.len() - 1) as i32,
             None => {
                 self.win = true;
                 true

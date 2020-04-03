@@ -25,6 +25,7 @@ pub fn start(args: &Vec<String>) -> Result<(), Box<dyn Error>>  {
     Ok(())
 }
 
+
 fn run(possible_words: &Vec<String>) {
     let mut games: Vec<Game> = vec!();
     let mut quit = false;
@@ -50,75 +51,76 @@ fn run(possible_words: &Vec<String>) {
                     break;
                 },
                 other => if other.len() != 1 {
-                    println!("\nInvalid guess at character.\n");
+                    println!("\nInvalid guess at character. Please enter one letter or 'quit' to leave.\n");
                 } else {
                     game.guess(&guess.chars().next().unwrap());
                 }
             }
-            print!("\x1B[2J");
 
             game.display();
         }
-    
-        if game.win {
-            println!("Congratulations, you win!");
-        } else {
-            println!("Sorry you lost :(");
-            println!("The word was {}.", game.word);
+
+        if !quit {
+            quit = end_game(&game);
         }
 
         games.push(game);
-
-        loop {
-            let mut answer = String::new();
-
-            println!("Play another? yes/no");
-            
-            io::stdin().read_line(&mut answer)
-                .expect("Failed to read line");
-
-            match &answer.to_lowercase().trim()[..] {
-                "yes" => break,
-                "no" => {
-                    quit = true;
-                    break;
-                },
-                _ => println!("Please type 'yes' or 'no'."),
-            }
-        }
     }
 
     display_stats(&games);
 }
 
-fn display_stats(games: &Vec<Game>) {
-    let wins = games.iter().fold(
-        0, 
-        |acc, game| if game.win { acc + 1 } else { acc }
-    );
-    let guesses = games.iter().fold(0, |acc, game| game.guess_count + acc);
-    let wrong_guesses = games.iter().fold(0, |acc, game| {
-        println!("{}", game.wrong_count);
-        game.wrong_count + acc
-    });
-    println!("Games played {}", games.len());
-    println!("Win Percentage: {:.2}%", (wins as f32)/(games.len() as f32) * 100.00);
-    println!("Total guesses: {}", guesses);
-    println!("Correct percentage: {:.2}%", (1.00 - (wrong_guesses as f32)/(guesses as f32)) * 100.00);
+#[derive(Debug)]
+struct EndGameStats {
+    wins: i32,
+    total_guesses: i32,
+    total_wrong: i32,
 }
 
+fn display_stats(games: &Vec<Game>) {
+    let game_stats: EndGameStats = games.iter().fold(
+        EndGameStats {
+            wins: 0, 
+            total_guesses: 0, 
+            total_wrong: 0
+        }, 
+        |acc, game| {
+            EndGameStats{
+                wins: if game.win { acc.wins + 1 } else { acc.wins }, 
+                total_guesses: game.guess_count + acc.total_guesses, 
+                total_wrong: game.wrong_count + acc.total_wrong, 
+            }
+        }
+    );
+    println!("Games played {}", games.len());
+    println!("Win Percentage: {:.2}%", (game_stats.wins as f32)/(games.len() as f32) * 100.00);
+    println!("Total guesses: {}", game_stats.total_guesses);
+    println!("Correct percentage: {:.2}%", 
+        (game_stats.total_guesses - game_stats.total_wrong) as f32/(game_stats.total_guesses as f32) * 100.00
+    );
+}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn new_game_creates_game () {
-
+fn end_game(game: &Game) -> bool {
+    if game.win {
+        println!("Congratulations, you win!");
+    } else {
+        println!("Sorry you lost :(");
+        println!("The word was {}.", game.word);
     }
 
-    #[test]
-    fn handles_correct_input () {
 
+    loop {
+        let mut answer = String::new();
+
+        println!("Play another? yes/no");
+        
+        io::stdin().read_line(&mut answer)
+            .expect("Failed to read line");
+
+        match &answer.to_lowercase().trim()[..] {
+            "yes" => return false,
+            "no" => return true,
+            _ => println!("Please type 'yes' or 'no'."),
+        }
     }
 }
